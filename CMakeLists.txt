@@ -29,14 +29,11 @@ else()
 	message(STATUS "Logging enabled: LOGGING_ENABLED=0")
 endif()
 
-target_include_directories(logging
-	PUBLIC
-		${CMAKE_CURRENT_SOURCE_DIR}/..
-	PRIVATE
-		${CMAKE_CURRENT_SOURCE_DIR}
+target_include_directories(logging PUBLIC
+	${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-# Abhaengigkeiten als PRIVATE: sie vererben keine Include-Pfade an Verbraucher
+# Abhaengigkeiten PRIVATE: sie vererben keine Include-Pfade an Verbraucher
 target_link_libraries(logging
 	PRIVATE
 		threading
