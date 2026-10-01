@@ -1,15 +1,16 @@
+// === Forward Declarations ===
 #include "logging/logging.h"
 
 #include <api/api.h>
 #include <threading/threading.h>
+
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdarg.h>
 
-// === Forward Declarations ===
 
 PRIVATE_FUNC(void, print_log(const char* prefix, const char* message));
 
