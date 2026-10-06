@@ -4,6 +4,7 @@
 /// \brief Zeitgestempelte Ausgabe von Log-Nachrichten mit optionaler Modul- und Funktionskennung.
 
 #include <stdarg.h>
+#include <stdlib.h>   // abort() fuer LOG_ASSERT
 
 /// \brief Gibt eine Nachricht ohne Formatierung aus.
 /// \param message auszugebende Nachricht (nullterminiert).
@@ -36,3 +37,32 @@ void logging_log_with_ID(const char* module_id, const char* function, const char
 #else
     #define LOG(module_id, ...) ((void)0)
 #endif
+
+/// \brief Zusicherung, die unter ALLEN Umstaenden gelten muss — die Wache gegen stille Fehlschlaege
+/// an den Stellen, an denen Ressourcen knapp werden koennen (Vertex-Bereich, Block-Tabelle,
+/// Material-Plaetze, Kommando-Warteschlange, Szenen-Eintraege).
+///
+/// Sie ist NICHT `assert()` aus `<assert.h>`: das loest im Abnahmebau (NDEBUG) zu nichts auf, und
+/// genau dort laufen die langen Fahrten. Sie ist auch nicht an LOGGING_ENABLED gebunden — die
+/// Meldung geht immer raus.
+///
+/// Verletzt sie sich, wird die Bedingung mit Datei und Zeile GEMELDET und der Lauf ABGEBROCHEN.
+/// Der Abbruch ist Absicht: wer eine Ressourcengrenze still ueberschreitet, verliert Objekte aus
+/// dem Bild, waehrend die Zaehler sie weiter als gezeichnet fuehren (genau das war der Fall
+/// „gezeichnet 7 von 56" ohne Uranus). Ein Abbruch beim ersten Auftreten ist billiger als ein
+/// Fehlbild, das niemand meldet.
+/// \param module_id Kennung des Moduls (wie bei LOG).
+/// \param bedingung Bedingung, die gelten MUSS.
+/// \param ... printf-Format und Werte fuer die Erklaerung (PFLICHT) — sie nennt die Groessen,
+///            mit denen sich die Grenze pruefen und anheben laesst.
+/// \note Die Zusicherung gehoert an die GRENZE, nicht in die Schleife: nur wo eine Grenze
+///       ueberschritten werden kann, nicht bei jedem Aufruf.
+#define LOG_ASSERT(module_id, bedingung, ...)                                                      \
+    do {                                                                                           \
+        if (!(bedingung)) {                                                                        \
+            logging_log_with_ID(module_id, __FUNCTION__, __FILE__ ":%d: ZUSICHERUNG VERLETZT: %s",  \
+                                __LINE__, #bedingung);                                             \
+            logging_log_with_ID(module_id, __FUNCTION__, __VA_ARGS__);                             \
+            abort();                                                                               \
+        }                                                                                          \
+    } while (0)
